@@ -18,3 +18,7 @@ spring:
 analyst:
   structured:
     max-attempts: 3
+  data:
+    financials: data/financials.csv
+  loop:
+    max-steps: 6
