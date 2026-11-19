@@ -19,3 +19,9 @@ Answer each phase's "Check your understanding" questions here, in your own words
 - When should two tools be merged into one, and when split?
 - Why must write tools be idempotent in an agent system?
 - What belongs in a tool description that would never go in a Java method comment?
+
+## Phase 4: MCP server
+
+- When would you use stdio instead of Streamable HTTP?
+- Why is a filing better as a resource than as a tool that returns the whole document?
+- What does the MCP server know about the model that calls it? (Hint: nothing.)

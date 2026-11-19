@@ -6,6 +6,15 @@ spring:
   application:
     name: analyst-desk
   ai:
+    mcp:
+      server:
+        name: analyst-desk
+        version: 0.4.0
+        type: SYNC
+        # Streamable HTTP: one endpoint, served by this same Spring MVC app.
+        protocol: STREAMABLE
+        streamable-http:
+          mcp-endpoint: /mcp
     google:
       genai:
         # Key comes from the environment only. Never commit it.
@@ -20,5 +29,6 @@ analyst:
     max-attempts: 3
   data:
     financials: data/financials.csv
+    docs: data/docs
   loop:
     max-steps: 6
