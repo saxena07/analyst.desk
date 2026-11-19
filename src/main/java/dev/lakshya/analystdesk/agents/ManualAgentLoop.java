@@ -34,7 +34,7 @@ public class ManualAgentLoop {
     private final String systemPrompt;
 
     public ManualAgentLoop(ChatModel chatModel, ToolRegistry toolRegistry,
-                           @Value("classpath:llm/prompts/agent-loop.v1.st") Resource systemPrompt) {
+                           @Value("classpath:llm/prompts/agent-loop.v2.st") Resource systemPrompt) {
         this.chatModel = chatModel;
         this.toolRegistry = toolRegistry;
         try {

@@ -13,3 +13,9 @@ Answer each phase's "Check your understanding" questions here, in your own words
 - Who actually executes the tool: the model or your code? Why does that matter for security?
 - What signals that the model is finished?
 - What should a stopped-at-limit result tell the caller?
+
+## Phase 3: Tool design
+
+- When should two tools be merged into one, and when split?
+- Why must write tools be idempotent in an agent system?
+- What belongs in a tool description that would never go in a Java method comment?

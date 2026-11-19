@@ -1,7 +1,9 @@
 package dev.lakshya.analystdesk.agents;
 
-import dev.lakshya.analystdesk.tools.Calculator;
-import dev.lakshya.analystdesk.tools.FinancialsLookup;
+import dev.lakshya.analystdesk.tools.FinancialRepository;
+import dev.lakshya.analystdesk.tools.FinancialTools;
+import dev.lakshya.analystdesk.tools.InMemoryNoteStore;
+import dev.lakshya.analystdesk.tools.NotebookTools;
 import dev.lakshya.analystdesk.tools.ToolRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +38,7 @@ class ManualAgentLoopTest {
                 HDFCBANK,GNPA_PCT,FY23,2.00,SAMPLE
                 HDFCBANK,GNPA_PCT,FY24,3.00,SAMPLE
                 """);
-        registry = new ToolRegistry(new FinancialsLookup(csv), new Calculator());
+        registry = new ToolRegistry(new FinancialTools(new FinancialRepository(csv)), new NotebookTools(new InMemoryNoteStore()));
     }
 
     /** A fake model: replies come from a function of the call number, and it records every prompt. */
@@ -69,9 +71,9 @@ class ManualAgentLoopTest {
     @Test
     void runsTwoLookupsThenACalculationThenAnswers() {
         FakeModel model = new FakeModel(n -> switch (n) {
-            case 1 -> asks("1", "getFinancial", "{\"company\":\"HDFCBANK\",\"metric\":\"GNPA_PCT\",\"fiscalYear\":\"FY23\"}");
-            case 2 -> asks("2", "getFinancial", "{\"company\":\"HDFCBANK\",\"metric\":\"GNPA_PCT\",\"fiscalYear\":\"FY24\"}");
-            case 3 -> asks("3", "percentChange", "{\"from\":2.0,\"to\":3.0}");
+            case 1 -> asks("1", "getFinancials", "{\"company\":\"HDFCBANK\",\"metric\":\"GNPA_PCT\",\"fiscalYear\":\"FY23\"}");
+            case 2 -> asks("2", "getFinancials", "{\"company\":\"HDFCBANK\",\"metric\":\"GNPA_PCT\",\"fiscalYear\":\"FY24\"}");
+            case 3 -> asks("3", "computeCagr", "{\"company\":\"HDFCBANK\",\"metric\":\"GNPA_PCT\",\"fromYear\":\"FY23\",\"toYear\":\"FY24\"}");
             default -> new AssistantMessage("GNPA rose 50%.");
         });
 
@@ -83,27 +85,27 @@ class ManualAgentLoopTest {
         var toolEntries = result.trace().stream().filter(e -> e.kind() == LoopTrace.Kind.TOOL_CALL).toList();
         assertThat(toolEntries).hasSize(3);
         assertThat(toolEntries.get(0).detail()).contains("\"value\":2.0");
-        assertThat(toolEntries.get(2).detail()).contains("50.0");
+        assertThat(toolEntries.get(2).detail()).contains("\"cagrPercent\":50.0");
         // The tool results were sent back to the model: the last prompt holds them.
         assertThat(model.messageCounts.get(3)).isEqualTo(2 + 3 * 2);
     }
 
     @Test
-    void aMissingFigureComesBackAsAnErrorTheModelCanReadNotACrash() {
+    void aMissingYearComesBackAsAnErrorWithAHintTheModelCanActOn() {
         FakeModel model = new FakeModel(n -> n == 1
-                ? asks("1", "getFinancial", "{\"company\":\"HDFCBANK\",\"metric\":\"GNPA_PCT\",\"fiscalYear\":\"FY99\"}")
+                ? asks("1", "getFinancials", "{\"company\":\"HDFCBANK\",\"metric\":\"GNPA_PCT\",\"fiscalYear\":\"FY99\"}")
                 : new AssistantMessage("No FY99 figure exists."));
 
         LoopResult result = loopWith(model).run("q", 6);
 
         assertThat(result.status()).isEqualTo(LoopResult.Status.ANSWERED);
-        assertThat(result.trace().get(1).detail()).contains("No such figure");
+        assertThat(result.trace().get(1).detail()).contains("NOT_FOUND").contains("Available years").contains("FY23");
     }
 
     @Test
     void aModelThatAlwaysRequestsAToolHitsTheStepCap() {
         FakeModel model = new FakeModel(n ->
-                asks("x" + n, "percentChange", "{\"from\":1.0,\"to\":2.0}"));
+                asks("x" + n, "getFinancials", "{\"company\":\"HDFCBANK\",\"metric\":\"GNPA_PCT\",\"fiscalYear\":\"FY23\"}"));
 
         LoopResult result = loopWith(model).run("q", 3);
 
